@@ -73,12 +73,15 @@ boolean reconnect() {
 // Callback function: receive timestamp from topic through MQTT and send it through a queue
 void callback(char* topic, byte* payload, unsigned int length) {
 
+  // Receive timestamp from topic
   if (strcmp(topic, mqttSyncTopic) == 0) {
     char mqttMess[100];
     memcpy(mqttMess, payload, length);
     mqttMess[length] = '\0';
     String mess = String(mqttMess);
     uint32_t timestamp = mess.toInt();
+
+    // Send timestamp through queue
     xQueueSend(syncQueue, &timestamp, 0);
   }
 
