@@ -1,0 +1,270 @@
+
+#include <FreeRTOS.h>
+#include <queue.h>
+#include <task.h>
+#include <Wire.h>
+#include <Adafruit_SGP30.h>
+#include "MAX30102_PulseOximeter.h"
+#include <RTClib.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+// WiFi credentials
+char* ssid = "appz";
+char* password = "ago12345";
+
+// MQTT broker information
+char* mqttBroker = "192.168.108.103";
+int mqttPort = 1883;
+char* mqttClientId = "amebaClient";
+char* mqttUsername = "ameba";
+char* mqttPassword = "ameba";
+
+// Topic creation
+char* mqttSensorTopic = "sensor";
+char* mqttSyncTopic = "timestamp";
+
+// Sensor objects
+Adafruit_SGP30 sgp30;
+PulseOximeter pox;
+RTC_PCF8523 rtc;
+
+// Wifi & Mqtt objects
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
+
+// Struct to contain sensor data
+typedef struct {
+  uint16_t tvoc;
+  uint16_t eco2;
+  float hr;
+  uint8_t spo2;
+  uint32_t currentTime;
+} SensorData;
+
+// Variables used for reconnection WiFi & MQTT
+long lastReconnectAttemptWIFI = 0;
+long lastReconnectAttemptMQTT = 0;
+
+// Task handles
+TaskHandle_t sensorTaskHandle;
+TaskHandle_t mqttTaskHandle;
+TaskHandle_t syncTaskHandle;
+
+// Queues
+QueueHandle_t sensorQueue;
+QueueHandle_t syncQueue;
+
+// Semaphores
+SemaphoreHandle_t sensorSemaphore;
+
+// Reconnect function for MQTT
+boolean reconnect() {
+
+  if (mqttClient.connect(mqttClientId, mqttUsername, mqttPassword)) {
+    mqttClient.subscribe(mqttSyncTopic);
+    mqttClient.loop();
+  }
+  return mqttClient.connected();
+}
+
+// Callback function: receive data from topic through MQTT and send it with a queue
+void callback(char* topic, byte* payload, unsigned int length) {
+
+  if (strcmp(topic, mqttSyncTopic) == 0) {
+    char mqttMess[100];
+    memcpy(mqttMess, payload, length);
+    mqttMess[length] = '\0';
+    String mess = String(mqttMess);
+    uint32_t timestamp = mess.toInt();
+    xQueueSend(syncQueue, &timestamp, 0);
+  }
+}
+
+// WiFi initializzation procedure
+void wifiInit() {
+
+  // Connect to WiFi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Connecting to WiFi...");
+    while (WiFi.status() != WL_CONNECTED) {
+      WiFi.begin(ssid, password);
+      delay(5000);
+    }
+  }
+  Serial.println("Connected to WiFi!");
+}
+
+// Sensors initializzation procedure
+void sensorInit() {
+
+  // Initialize MAX30102
+  if (!pox.begin()) {
+    Serial.println("Failed to initialize MAX30102!");
+    while (!pox.begin()) delay(500);
+  } else {
+    Serial.println("MAX30102 initialized!");
+  }
+  pox.setIRLedCurrent(MAX30102_LED_CURR_7_6MA);
+
+  // Initialize SGP30
+  if (!sgp30.begin()) {
+    Serial.println("Failed to initialize SGP30!");
+    while (!sgp30.begin()) delay(500);
+  } else {
+    Serial.println("SGP3O initialized!");
+  }
+
+  // Initialize PCF8523
+  if (!rtc.begin()) {
+    Serial.println("Failed to initialize PCF8523!");
+    while (!rtc.begin()) delay(500);
+  } else {
+    Serial.println("PCF8523 initialized!");
+  }
+  rtc.start();
+}
+
+// Sensor task: read data from sensors and send them through queue to MQTT task
+void sensorTask(void* params) {
+
+  (void)params;
+  SensorData sensorData;
+  TickType_t xLastWakeTime;
+  xLastWakeTime = xTaskGetTickCount();
+
+  while (1) {
+    xQueueSemaphoreTake(sensorSemaphore, portMAX_DELAY);
+    pox.update();
+    sensorData.hr = pox.getHeartRate();
+    sensorData.spo2 = pox.getSpO2();
+
+    if (!sgp30.IAQmeasure()) {
+      Serial.println("Failed to measure IAQ!");
+
+      while (!sgp30.IAQmeasure()) delay(500);
+
+    } else {
+      sensorData.tvoc = sgp30.TVOC;
+      sensorData.eco2 = sgp30.eCO2;
+    }
+
+    sensorData.currentTime = rtc.now().unixtime();
+    Serial.println((int)(sensorData.hr));
+    Serial.println(sensorData.spo2);
+    Serial.println(sensorData.tvoc);
+    Serial.println(sensorData.eco2);
+    Serial.println(sensorData.currentTime);
+    xQueueSend(sensorQueue, &sensorData, 0);
+    xSemaphoreGive(sensorSemaphore);
+
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));  // 100 ms
+  }
+}
+
+/* MQTT task: 
+              1. Check WiFi & MQTT are connected; 
+              2. Receive message from MQTT topic and send it through a queue;
+              3. Send message to MQTT topic with sensors data
+*/
+0
+void mqttTask(void* params) {
+
+  (void)params;
+  SensorData sensorData;
+  TickType_t xLastWakeTime;
+  xLastWakeTime = xTaskGetTickCount();
+
+  while (1) {
+    xQueueSemaphoreTake(sensorSemaphore, portMAX_DELAY);
+
+    while (WiFi.status() != WL_CONNECTED) {
+
+      long now = millis();
+
+      if (now - lastReconnectAttemptWIFI > 5000) {
+        lastReconnectAttemptWIFI = now;
+        if (WiFi.begin(ssid, password) == WL_CONNECTED) {
+          lastReconnectAttemptWIFI = 0;
+        }
+      }
+    }
+
+    while (!mqttClient.connected()) {
+      long now = millis();
+
+      if (now - lastReconnectAttemptMQTT > 5000) {
+        lastReconnectAttemptMQTT = now;
+        // Attempt to reconnect
+        if (reconnect()) {
+          lastReconnectAttemptMQTT = 0;
+        }
+      }
+    }
+
+    if (xQueueReceive(sensorQueue, &sensorData, 0) == pdPASS) {
+      char sensorMess[100];
+      snprintf(sensorMess, sizeof(sensorMess), "%d,%d,%d,%d,%d", sensorData.tvoc, sensorData.eco2, (int)sensorData.hr, sensorData.spo2, sensorData.currentTime);
+      mqttClient.publish(mqttSensorTopic, sensorMess);
+      mqttClient.loop();
+    }
+
+
+    xSemaphoreGive(sensorSemaphore);
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(200));  // 200 ms
+  }
+}
+
+// Sync Task: receive timestamp from queue and set rtc sensor
+void syncTask(void* params) {
+  (void)params;
+  uint32_t timestamp;
+  TickType_t xLastWakeTime;
+  xLastWakeTime = xTaskGetTickCount();
+
+  while (1) {
+    xSemaphoreTake(sensorSemaphore, portMAX_DELAY);
+
+    if (xQueueReceive(syncQueue, &timestamp, 0)) {
+      DateTime dt = DateTime(timestamp);
+      rtc.adjust(dt);
+    }
+
+    xSemaphoreGive(sensorSemaphore);
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));  // 100 ms
+  }
+}
+
+void setup() {
+
+
+  Serial.begin(115200);
+
+  mqttClient.setServer(mqttBroker, mqttPort);
+  mqttClient.setCallback(callback);
+
+  // Connect to WiFi
+  wifiInit();
+
+  // Initialize sensors
+  sensorInit();
+
+  // Create queues
+  sensorQueue = xQueueCreate(1, sizeof(SensorData));
+  syncQueue = xQueueCreate(1, sizeof(uint32_t));
+
+  // Create Mutex
+  sensorSemaphore = xSemaphoreCreateMutex();
+
+  // Create tasks
+  xTaskCreate(sensorTask, "SensorTask", 4096, NULL, 1, &sensorTaskHandle);
+  xTaskCreate(mqttTask, "MqttTask", 4096, NULL, 3, &mqttTaskHandle);
+  xTaskCreate(syncTask, "SyncTask", 4096, NULL, 2, &syncTaskHandle);
+
+
+  // Give semaphores
+  xSemaphoreGive(sensorSemaphore);
+}
+
+void loop() {}
