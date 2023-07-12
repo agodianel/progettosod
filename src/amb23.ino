@@ -226,7 +226,7 @@ void syncTask(void* params) {
   while (1) {
     xSemaphoreTake(sensorSemaphore, portMAX_DELAY);
 
-    if (xQueueReceive(syncQueue, &timestamp, 0)) {
+    if (xQueueReceive(syncQueue, &timestamp, 0) == pdPASS) {
       DateTime dt = DateTime(timestamp);
       rtc.adjust(dt);
     }
