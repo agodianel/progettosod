@@ -83,10 +83,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
   // Receive timestamp from topic
   if (strcmp(topic, mqttSyncTopic) == 0) {
     char mqttMess[100];
+    uint32_t timestamp;
     memcpy(mqttMess, payload, length);
     mqttMess[length] = '\0';
     String mess = String(mqttMess);
-    uint32_t timestamp = mess.toInt();
+    timestamp = mess.toInt();
     if (control) {
       temp = timestamp;
       Serial.println(temp);
@@ -121,7 +122,7 @@ void sensorInit() {
   // Initialize MAX30102
   if (!pox.begin()) {
     Serial.println("Failed to initialize MAX30102!");
-    while (!pox.begin()) delay(500);
+    while (1);
   } else {
     Serial.println("MAX30102 initialized!");
   }
@@ -130,7 +131,7 @@ void sensorInit() {
   // Initialize SGP30
   if (!sgp30.begin()) {
     Serial.println("Failed to initialize SGP30!");
-    while (!sgp30.begin()) delay(500);
+    while (1);
   } else {
     Serial.println("SGP3O initialized!");
   }
@@ -138,7 +139,7 @@ void sensorInit() {
   // Initialize PCF8523
   if (!rtc.begin()) {
     Serial.println("Failed to initialize PCF8523!");
-    while (!rtc.begin()) delay(500);
+    while (1);
   } else {
     Serial.println("PCF8523 initialized!");
   }
@@ -186,9 +187,8 @@ void sensorTask(void* params) {
 
     if (!sgp30.IAQmeasure()) {
       Serial.println("Failed to measure IAQ!");
-
-      while (!sgp30.IAQmeasure()) delay(500);
-
+      while (1);
+      
     } else {
       sensorData.tvoc = sgp30.TVOC;
       sensorData.eco2 = sgp30.eCO2;
