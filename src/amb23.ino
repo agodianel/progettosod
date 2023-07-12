@@ -65,7 +65,9 @@ boolean reconnect() {
     mqttClient.subscribe(mqttSyncTopic);
     mqttClient.loop();
   }
+
   return mqttClient.connected();
+
 }
 
 // Callback function: receive data from topic through MQTT and send it with a queue
@@ -79,6 +81,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     uint32_t timestamp = mess.toInt();
     xQueueSend(syncQueue, &timestamp, 0);
   }
+
 }
 
 // WiFi initializzation procedure
@@ -94,6 +97,7 @@ void wifiInit() {
     }
   }
   Serial.println("Connected to WiFi!");
+
 }
 
 // Sensors initializzation procedure
@@ -124,6 +128,7 @@ void sensorInit() {
     Serial.println("PCF8523 initialized!");
   }
   rtc.start();
+
 }
 
 // Sensor task: read data from sensors and send them through queue to MQTT task
@@ -135,7 +140,11 @@ void sensorTask(void* params) {
   xLastWakeTime = xTaskGetTickCount();
 
   while (1) {
+
+    // Take semaphore
     xQueueSemaphoreTake(sensorSemaphore, portMAX_DELAY);
+
+    // Read sensors data
     pox.update();
     sensorData.hr = pox.getHeartRate();
     sensorData.spo2 = pox.getSpO2();
@@ -156,11 +165,17 @@ void sensorTask(void* params) {
     Serial.println(sensorData.tvoc);
     Serial.println(sensorData.eco2);
     Serial.println(sensorData.currentTime);
+
+    // Send sensors data through queue
     xQueueSend(sensorQueue, &sensorData, 0);
+
+    // Give semaphore
     xSemaphoreGive(sensorSemaphore);
 
+    // Block task for a period
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));  // 100 ms
   }
+
 }
 
 /* MQTT task: 
@@ -168,7 +183,6 @@ void sensorTask(void* params) {
               2. Receive timestamp from MQTT topic and send it through a queue;
               3. Send sensors data as message to MQTT topic;
 */
-
 void mqttTask(void* params) {
 
   (void) params;
@@ -177,14 +191,18 @@ void mqttTask(void* params) {
   xLastWakeTime = xTaskGetTickCount();
 
   while (1) {
+
+    // Take semaphore
     xQueueSemaphoreTake(sensorSemaphore, portMAX_DELAY);
 
+    // Loop until WiFi is connected
     while (WiFi.status() != WL_CONNECTED) {
 
       long now = millis();
 
       if (now - lastReconnectAttemptWIFI > 5000) {
         lastReconnectAttemptWIFI = now;
+
         // Attempt to  WiFi
         if (WiFi.begin(ssid, password) == WL_CONNECTED) {
           lastReconnectAttemptWIFI = 0;
@@ -192,11 +210,13 @@ void mqttTask(void* params) {
       }
     }
 
+    // // Loop until MQTT is connected
     while (!mqttClient.connected()) {
       long now = millis();
 
       if (now - lastReconnectAttemptMQTT > 5000) {
         lastReconnectAttemptMQTT = now;
+
         // Attempt to  MQTT
         if (reconnect()) {
           lastReconnectAttemptMQTT = 0;
@@ -204,6 +224,7 @@ void mqttTask(void* params) {
       }
     }
 
+    // Receive sensors data from queue and publish a message on topic MQTT
     if (xQueueReceive(sensorQueue, &sensorData, 0) == pdPASS) {
       char sensorMess[100];
       snprintf(sensorMess, sizeof(sensorMess), "%d,%d,%d,%d,%d", sensorData.tvoc, sensorData.eco2, (int)sensorData.hr, sensorData.spo2, sensorData.currentTime);
@@ -211,34 +232,44 @@ void mqttTask(void* params) {
       mqttClient.loop();
     }
 
-
+    // Give semaphore
     xSemaphoreGive(sensorSemaphore);
+
+    // Block task for a period
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(200));  // 200 ms
   }
+
 }
 
 // Sync Task: receive timestamp from queue and set rtc sensor
 void syncTask(void* params) {
+
   (void) params;
   uint32_t timestamp;
   TickType_t xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
 
   while (1) {
+
+    // Take semaphore
     xSemaphoreTake(sensorSemaphore, portMAX_DELAY);
 
+    // Receive timestamp from queue and set time on PCF8523
     if (xQueueReceive(syncQueue, &timestamp, 0) == pdPASS) {
       DateTime dt = DateTime(timestamp);
       rtc.adjust(dt);
     }
 
+    // Give semaphore
     xSemaphoreGive(sensorSemaphore);
+    
+    // Block task for a period
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));  // 100 ms
   }
+
 }
 
 void setup() {
-
 
   Serial.begin(115200);
 
@@ -255,7 +286,7 @@ void setup() {
   sensorQueue = xQueueCreate(1, sizeof(SensorData));
   syncQueue = xQueueCreate(1, sizeof(uint32_t));
 
-  // Create Mutex
+  // Create mutex
   sensorSemaphore = xSemaphoreCreateMutex();
 
   // Create tasks
@@ -266,6 +297,8 @@ void setup() {
 
   // Give semaphore
   xSemaphoreGive(sensorSemaphore);
+
 }
 
+// Unused
 void loop() {}
