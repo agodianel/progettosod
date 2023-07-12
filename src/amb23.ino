@@ -154,7 +154,6 @@ void syncFT() {
     if (!mqttClient.connected()) {
       mqttClient.connect(mqttClientId, mqttUsername, mqttPassword);
       mqttClient.subscribe(mqttSyncTopic);
-      mqttClient.loop();
     }
     // Control if first timestamp is arrived
     if (state) {
