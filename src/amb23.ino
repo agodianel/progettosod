@@ -129,7 +129,7 @@ void sensorInit() {
 // Sensor task: read data from sensors and send them through queue to MQTT task
 void sensorTask(void* params) {
 
-  (void)params;
+  (void) params;
   SensorData sensorData;
   TickType_t xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
@@ -171,7 +171,7 @@ void sensorTask(void* params) {
 
 void mqttTask(void* params) {
 
-  (void)params;
+  (void) params;
   SensorData sensorData;
   TickType_t xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
@@ -218,7 +218,7 @@ void mqttTask(void* params) {
 
 // Sync Task: receive timestamp from queue and set rtc sensor
 void syncTask(void* params) {
-  (void)params;
+  (void) params;
   uint32_t timestamp;
   TickType_t xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
