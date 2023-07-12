@@ -164,9 +164,9 @@ void sensorTask(void* params) {
 }
 
 /* MQTT task: 
-              1. Check WiFi & MQTT are connected; 
-              2. Receive message from MQTT topic and send it through a queue;
-              3. Send message to MQTT topic with sensors data
+              1. Check if WiFi & MQTT are connected; 
+              2. Receive timestamp from MQTT topic and send it through a queue;
+              3. Send sensors data as message to MQTT topic;
 */
 
 void mqttTask(void* params) {
