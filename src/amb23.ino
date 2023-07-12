@@ -46,10 +46,11 @@ typedef struct {
 long lastReconnectAttemptWIFI = 0;
 long lastReconnectAttemptMQTT = 0;
 
-// Control variable
+// Control variables
 boolean control = true;
 boolean state = false;
 
+// Variable to store first time sync
 uint32_t temp = 0;
 
 // Task handles (unused)
