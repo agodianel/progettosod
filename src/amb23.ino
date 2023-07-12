@@ -168,7 +168,7 @@ void sensorTask(void* params) {
               2. Receive message from MQTT topic and send it through a queue;
               3. Send message to MQTT topic with sensors data
 */
-0
+
 void mqttTask(void* params) {
 
   (void)params;
