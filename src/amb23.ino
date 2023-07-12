@@ -55,7 +55,7 @@ TaskHandle_t syncTaskHandle;
 QueueHandle_t sensorQueue;
 QueueHandle_t syncQueue;
 
-// Semaphores
+// Semaphore
 SemaphoreHandle_t sensorSemaphore;
 
 // Reconnect function for MQTT
