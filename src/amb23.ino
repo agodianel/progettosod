@@ -289,7 +289,7 @@ void setup() {
   // Create mutex
   sensorSemaphore = xSemaphoreCreateMutex();
 
-  // Create tasks
+  // Create tasks with their priorities
   xTaskCreate(sensorTask, "SensorTask", 4096, NULL, 1, &sensorTaskHandle);
   xTaskCreate(mqttTask, "MqttTask", 4096, NULL, 3, &mqttTaskHandle);
   xTaskCreate(syncTask, "SyncTask", 4096, NULL, 2, &syncTaskHandle);
