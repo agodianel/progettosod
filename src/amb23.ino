@@ -160,7 +160,7 @@ void syncFT() {
       rtc.adjust(dt);
       Serial.println("Sync done!");
       control = false;
-      }
+    }
     
     mqttClient.loop();
   }
@@ -188,7 +188,7 @@ void sensorTask(void* params) {
     if (!sgp30.IAQmeasure()) {
       Serial.println("Failed to measure IAQ!");
       while (1);
-      
+
     } else {
       sensorData.tvoc = sgp30.TVOC;
       sensorData.eco2 = sgp30.eCO2;
