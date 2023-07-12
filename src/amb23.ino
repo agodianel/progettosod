@@ -184,8 +184,8 @@ void sensorTask(void* params) {
 /* 
 MQTT task: 
             1. Check if WiFi & MQTT are connected
-            2. Receive timestamp from MQTT topic and send it through a queue
-            3. Send sensors data as message to MQTT topic
+            2. Receive timestamp from MQTT topic and send it through a queue to Sync task
+            3. Receive sensors data through queue from Sensor task and send it as message to MQTT topic
 */
 void mqttTask(void* params) {
 
@@ -245,7 +245,7 @@ void mqttTask(void* params) {
 
 }
 
-// Sync Task: receive timestamp from queue and set rtc sensor
+// Sync Task: receive timestamp through queue from MQTT task and set rtc sensor
 void syncTask(void* params) {
 
   (void) params;
