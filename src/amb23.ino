@@ -70,7 +70,7 @@ boolean reconnect() {
 
 }
 
-// Callback function: receive data from topic through MQTT and send it with a queue
+// Callback function: receive timestamp from topic through MQTT and send it through a queue
 void callback(char* topic, byte* payload, unsigned int length) {
 
   if (strcmp(topic, mqttSyncTopic) == 0) {
