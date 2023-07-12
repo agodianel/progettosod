@@ -14,7 +14,7 @@ char* ssid = "appz";
 char* password = "ago12345";
 
 // MQTT broker information
-char* mqttBroker = "192.168.108.103";
+char* mqttBroker = "192.168.152.103";
 int mqttPort = 1883;
 char* mqttClientId = "amebaClient";
 char* mqttUsername = "ameba";
@@ -45,6 +45,12 @@ typedef struct {
 // Variables used for reconnection WiFi & MQTT
 long lastReconnectAttemptWIFI = 0;
 long lastReconnectAttemptMQTT = 0;
+
+// Control variable
+boolean control = true;
+boolean state = false;
+
+uint32_t temp = 0;
 
 // Task handles (unused)
 TaskHandle_t sensorTaskHandle;
@@ -80,9 +86,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
     mqttMess[length] = '\0';
     String mess = String(mqttMess);
     uint32_t timestamp = mess.toInt();
-
-    // Send timestamp through queue
-    xQueueSend(syncQueue, &timestamp, 0);
+    if (control) {
+      temp = timestamp;
+      Serial.println(temp);
+      state = true;
+    } else {
+      // Send timestamp through queue
+      xQueueSend(syncQueue, &timestamp, 0);
+    }
   }
 
 }
@@ -131,6 +142,26 @@ void sensorInit() {
     Serial.println("PCF8523 initialized!");
   }
   rtc.start();
+
+}
+
+// Function that receive timestamp and set rtc sensor for the first time
+void syncFT() {
+  while (control) {
+    if (!mqttClient.connected()) {
+      mqttClient.connect(mqttClientId, mqttUsername, mqttPassword);
+      mqttClient.subscribe(mqttSyncTopic);
+      mqttClient.loop();
+    }
+    if (state) {
+      DateTime dt = DateTime(temp);
+      rtc.adjust(dt);
+      Serial.println("Sync done!");
+      control = false;
+      }
+    
+    mqttClient.loop();
+  }
 
 }
 
@@ -240,7 +271,7 @@ void mqttTask(void* params) {
     xSemaphoreGive(sensorSemaphore);
 
     // Block task for a fixed period
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(200));  // 200 ms
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));  // 100 ms
   }
 
 }
@@ -285,6 +316,11 @@ void setup() {
 
   // Initialize sensors
   sensorInit();
+
+  Serial.println("Wait for timestamp");
+
+  syncFT();
+    
 
   // Create queues
   sensorQueue = xQueueCreate(1, sizeof(SensorData));
