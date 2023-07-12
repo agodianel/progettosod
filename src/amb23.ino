@@ -46,7 +46,7 @@ typedef struct {
 long lastReconnectAttemptWIFI = 0;
 long lastReconnectAttemptMQTT = 0;
 
-// Task handles
+// Task handles (unused)
 TaskHandle_t sensorTaskHandle;
 TaskHandle_t mqttTaskHandle;
 TaskHandle_t syncTaskHandle;
