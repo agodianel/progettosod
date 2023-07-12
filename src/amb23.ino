@@ -263,7 +263,7 @@ void setup() {
   xTaskCreate(syncTask, "SyncTask", 4096, NULL, 2, &syncTaskHandle);
 
 
-  // Give semaphores
+  // Give semaphore
   xSemaphoreGive(sensorSemaphore);
 }
 
