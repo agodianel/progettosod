@@ -88,6 +88,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     mqttMess[length] = '\0';
     String mess = String(mqttMess);
     timestamp = mess.toInt();
+    // Control if it is first sync
     if (control) {
       temp = timestamp;
       Serial.println(temp);
@@ -155,6 +156,7 @@ void syncFT() {
       mqttClient.subscribe(mqttSyncTopic);
       mqttClient.loop();
     }
+    // Control if first timestamp is arrived
     if (state) {
       DateTime dt = DateTime(temp);
       rtc.adjust(dt);
