@@ -172,7 +172,7 @@ void sensorTask(void* params) {
     // Give semaphore
     xSemaphoreGive(sensorSemaphore);
 
-    // Block task for a period
+    // Block task for a fixed period
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));  // 100 ms
   }
 
@@ -236,7 +236,7 @@ void mqttTask(void* params) {
     // Give semaphore
     xSemaphoreGive(sensorSemaphore);
 
-    // Block task for a period
+    // Block task for a fixed period
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(200));  // 200 ms
   }
 
@@ -264,7 +264,7 @@ void syncTask(void* params) {
     // Give semaphore
     xSemaphoreGive(sensorSemaphore);
     
-    // Block task for a period
+    // Block task for a fixed period
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));  // 100 ms
   }
 
