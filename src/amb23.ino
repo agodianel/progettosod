@@ -298,7 +298,6 @@ void setup() {
   xTaskCreate(mqttTask, "MqttTask", 4096, NULL, 3, &mqttTaskHandle);
   xTaskCreate(syncTask, "SyncTask", 4096, NULL, 2, &syncTaskHandle);
 
-
   // Give semaphore
   xSemaphoreGive(sensorSemaphore);
 
