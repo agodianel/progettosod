@@ -185,6 +185,7 @@ void mqttTask(void* params) {
 
       if (now - lastReconnectAttemptWIFI > 5000) {
         lastReconnectAttemptWIFI = now;
+        // Attempt to  WiFi
         if (WiFi.begin(ssid, password) == WL_CONNECTED) {
           lastReconnectAttemptWIFI = 0;
         }
@@ -196,7 +197,7 @@ void mqttTask(void* params) {
 
       if (now - lastReconnectAttemptMQTT > 5000) {
         lastReconnectAttemptMQTT = now;
-        // Attempt to reconnect
+        // Attempt to  MQTT
         if (reconnect()) {
           lastReconnectAttemptMQTT = 0;
         }
