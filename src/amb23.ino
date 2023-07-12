@@ -84,7 +84,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 }
 
-// WiFi initializzation procedure
+// WiFi initialization procedure
 void wifiInit() {
 
   // Connect to WiFi
@@ -100,7 +100,7 @@ void wifiInit() {
 
 }
 
-// Sensors initializzation procedure
+// Sensors initialization procedure
 void sensorInit() {
 
   // Initialize MAX30102
