@@ -63,7 +63,7 @@ QueueHandle_t sensorQueue;
 QueueHandle_t syncQueue;
 
 // Semaphore
-SemaphoreHandle_t sensorSemaphore;
+SemaphoreHandle_t mutexSemaphore;
 
 // Reconnect function for MQTT
 boolean reconnect() {
@@ -179,7 +179,7 @@ void sensorTask(void* params) {
   while (1) {
 
     // Take semaphore
-    xQueueSemaphoreTake(sensorSemaphore, portMAX_DELAY);
+    xQueueSemaphoreTake(mutexSemaphore, portMAX_DELAY);
 
     // Read sensors data
     pox.update();
@@ -206,7 +206,7 @@ void sensorTask(void* params) {
     xQueueSend(sensorQueue, &sensorData, 0);
 
     // Give semaphore
-    xSemaphoreGive(sensorSemaphore);
+    xSemaphoreGive(mutexSemaphore);
 
     // Block task for a fixed period
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));  // 100 ms
@@ -230,7 +230,7 @@ void mqttTask(void* params) {
   while (1) {
 
     // Take semaphore
-    xQueueSemaphoreTake(sensorSemaphore, portMAX_DELAY);
+    xQueueSemaphoreTake(mutexSemaphore, portMAX_DELAY);
 
     // Loop until WiFi is connected
     while (WiFi.status() != WL_CONNECTED) {
@@ -270,7 +270,7 @@ void mqttTask(void* params) {
     }
 
     // Give semaphore
-    xSemaphoreGive(sensorSemaphore);
+    xSemaphoreGive(mutexSemaphore);
 
     // Block task for a fixed period
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));  // 100 ms
@@ -289,7 +289,7 @@ void syncTask(void* params) {
   while (1) {
 
     // Take semaphore
-    xSemaphoreTake(sensorSemaphore, portMAX_DELAY);
+    xSemaphoreTake(mutexSemaphore, portMAX_DELAY);
 
     // Receive timestamp from queue and set time on PCF8523
     if (xQueueReceive(syncQueue, &timestamp, 0) == pdPASS) {
@@ -298,7 +298,7 @@ void syncTask(void* params) {
     }
 
     // Give semaphore
-    xSemaphoreGive(sensorSemaphore);
+    xSemaphoreGive(mutexSemaphore);
     
     // Block task for a fixed period
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));  // 100 ms
@@ -329,7 +329,7 @@ void setup() {
   syncQueue = xQueueCreate(1, sizeof(uint32_t));
 
   // Create mutex
-  sensorSemaphore = xSemaphoreCreateMutex();
+  mutexSemaphore = xSemaphoreCreateMutex();
 
   // Create tasks with their priorities
   xTaskCreate(sensorTask, "SensorTask", 4096, NULL, 1, &sensorTaskHandle);
@@ -337,7 +337,7 @@ void setup() {
   xTaskCreate(syncTask, "SyncTask", 4096, NULL, 2, &syncTaskHandle);
 
   // Give semaphore
-  xSemaphoreGive(sensorSemaphore);
+  xSemaphoreGive(mutexSemaphore);
 
 }
 
