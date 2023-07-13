@@ -285,13 +285,12 @@ void setup() {
 
   // Connect to WiFi
   wifiInit();
+  
+  Serial.println("Wait for timestamp");
+  syncFT();
 
   // Initialize sensors
   sensorInit();
-
-  Serial.println("Wait for timestamp");
-
-  syncFT();
    
   // Create queues
   sensorQueue = xQueueCreate(1, sizeof(SensorData));

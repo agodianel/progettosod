@@ -320,12 +320,12 @@ void setup() {
   // Connect to WiFi
   wifiInit();
 
-  // Initialize sensors
-  sensorInit();
-
   Serial.println("Wait for timestamp");
 
   syncFT();
+  
+  // Initialize sensors
+  sensorInit();
 
   // Create queues
   sensorQueue = xQueueCreate(1, sizeof(SensorData));
