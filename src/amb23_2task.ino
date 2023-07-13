@@ -74,8 +74,8 @@ boolean reconnect() {
 void callback(char* topic, byte* payload, unsigned int length) {
   // Control if it is first timestamp
   if (isFirst) {
-    isFirst = false;
     if (strcmp(topic, mqttSyncTopic) == 0) {
+      isFirst = false;
       char mqttMess[100];
       uint32_t timestamp;
       memcpy(mqttMess, payload, length);
