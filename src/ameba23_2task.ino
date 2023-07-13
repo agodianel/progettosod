@@ -97,8 +97,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
       mqttMess[length] = '\0';
       String mess = String(mqttMess);
       timestamp = mess.toInt();
-        DateTime dt = DateTime(timestamp);
-        rtc.adjust(dt);
+      DateTime dt = DateTime(timestamp);
+      rtc.adjust(dt);
     }
   }
 }
@@ -108,7 +108,6 @@ void wifiInit() {
 
   // Connect to WiFi
   WiFi.begin(ssid, password);
-  Serial.flush();
   while (WiFi.status() != WL_CONNECTED) {
     Serial.println("Connecting to WiFi...");
     while (WiFi.status() != WL_CONNECTED) {
