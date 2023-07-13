@@ -153,7 +153,7 @@ void sensorInit() {
 // Function that receive timestamp and set rtc sensor for the first time
 void syncFT() {
   while (isFirst) {
-    if (!reconnect()) {;}
+    if (!reconnect()) { delay(5000); }
     // Control if first timestamp is arrived
     if (isArrived) {
       DateTime dt = DateTime(temp);
