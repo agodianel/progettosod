@@ -326,7 +326,6 @@ void setup() {
   Serial.println("Wait for timestamp");
 
   syncFT();
-    
 
   // Create queues
   sensorQueue = xQueueCreate(1, sizeof(SensorData));
