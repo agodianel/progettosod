@@ -47,8 +47,8 @@ long lastReconnectAttemptWIFI = 0;
 long lastReconnectAttemptMQTT = 0;
 
 // Control variables
-boolean control = true;
-boolean state = false;
+boolean isFirst = true;
+boolean isArrived = false;
 
 // Variable to store first time sync
 uint32_t temp = 0;
@@ -87,11 +87,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
     mqttMess[length] = '\0';
     String mess = String(mqttMess);
     timestamp = mess.toInt();
-    // Control if it is first sync
-    if (control) {
+    // isFirst if it is first sync
+    if (isFirst) {
       temp = timestamp;
       Serial.println(temp);
-      state = true;
+      isArrived = true;
     } else {
       // Send timestamp through queue
       xQueueSend(syncQueue, &timestamp, 0);
@@ -149,14 +149,14 @@ void sensorInit() {
 
 // Function that receive timestamp and set rtc sensor for the first time
 void syncFT() {
-  while (control) {
+  while (isFirst) {
     if (!reconnect()) { delay(5000); }
-    // Control if first timestamp is arrived
-    if (state) {
+    // isFirst if first timestamp is arrived
+    if (isArrived) {
       DateTime dt = DateTime(temp);
       rtc.adjust(dt);
       Serial.println("Sync done!");
-      control = false;
+      isFirst = false;
     }
     
     mqttClient.loop();
