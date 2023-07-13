@@ -1,5 +1,3 @@
-```c
-
 
 #include <FreeRTOS.h>
 #include <queue.h>
@@ -313,6 +311,3 @@ void setup() {
 
 // Unused
 void loop() {}
-
-
-```
