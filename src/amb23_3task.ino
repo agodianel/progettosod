@@ -79,21 +79,29 @@ boolean reconnect() {
 // Callback function: receive timestamp from topic through MQTT and send it through a queue
 void callback(char* topic, byte* payload, unsigned int length) {
 
-  // Receive timestamp from topic
-  if (strcmp(topic, mqttSyncTopic) == 0) {
-    char mqttMess[100];
-    uint32_t timestamp;
-    memcpy(mqttMess, payload, length);
-    mqttMess[length] = '\0';
-    String mess = String(mqttMess);
-    timestamp = mess.toInt();
-    // isFirst if it is first sync
-    if (isFirst) {
+  // Control if it is first timestamp
+  if (isFirst) {
+    if (strcmp(topic, mqttSyncTopic) == 0) {
+      isFirst = false;
+      char mqttMess[100];
+      uint32_t timestamp;
+      memcpy(mqttMess, payload, length);
+      mqttMess[length] = '\0';
+      String mess = String(mqttMess);
+      timestamp = mess.toInt();
       temp = timestamp;
       Serial.println(temp);
       isArrived = true;
-    } else {
-      // Send timestamp through queue
+    } 
+  // Control if it is not first timestamp  
+  } else if (!isFirst) {
+    if (strcmp(topic, mqttSyncTopic) == 0) {
+      char mqttMess[100];
+      uint32_t timestamp;
+      memcpy(mqttMess, payload, length);
+      mqttMess[length] = '\0';
+      String mess = String(mqttMess);
+      timestamp = mess.toInt();
       xQueueSend(syncQueue, &timestamp, 0);
     }
   }
@@ -156,7 +164,6 @@ void syncFT() {
       DateTime dt = DateTime(temp);
       rtc.adjust(dt);
       Serial.println("Sync done!");
-      isFirst = false;
     }
     
     mqttClient.loop();

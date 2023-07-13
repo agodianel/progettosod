@@ -157,7 +157,6 @@ void syncFT() {
       DateTime dt = DateTime(temp);
       rtc.adjust(dt);
       Serial.println("Sync done!");
-      isFirst = false;
     }
     
     mqttClient.loop();
