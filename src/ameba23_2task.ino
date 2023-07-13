@@ -74,10 +74,9 @@ boolean reconnect() {
 
 // Callback function: receive timestamp as message from topic through MQTT and sync time on PCF8523
 void callback(char* topic, byte* payload, unsigned int length) {
-
+  // Control if it is first timestamp
   if (isFirst) {
     isFirst = false;
-    // Receive timestamp from topic
     if (strcmp(topic, mqttSyncTopic) == 0) {
       char mqttMess[100];
       uint32_t timestamp;
@@ -85,11 +84,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
       mqttMess[length] = '\0';
       String mess = String(mqttMess);
       timestamp = mess.toInt();
-      // Control if it is first sync
       temp = timestamp;
       Serial.println(temp);
       isArrived = true;
     } 
+  // Control if it is not first timestamp  
   } else if (!isFirst) {
     if (strcmp(topic, mqttSyncTopic) == 0) {
       char mqttMess[100];
@@ -98,8 +97,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
       mqttMess[length] = '\0';
       String mess = String(mqttMess);
       timestamp = mess.toInt();
-      // Control if it is first sync
-        // Sync time
         DateTime dt = DateTime(timestamp);
         rtc.adjust(dt);
     }
