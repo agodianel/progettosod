@@ -70,7 +70,6 @@ boolean reconnect() {
 
   if (mqttClient.connect(mqttClientId, mqttUsername, mqttPassword)) {
     mqttClient.subscribe(mqttSyncTopic);
-    mqttClient.loop();
   }
 
   return mqttClient.connected();
@@ -151,10 +150,7 @@ void sensorInit() {
 // Function that receive timestamp and set rtc sensor for the first time
 void syncFT() {
   while (control) {
-    if (!mqttClient.connected()) {
-      mqttClient.connect(mqttClientId, mqttUsername, mqttPassword);
-      mqttClient.subscribe(mqttSyncTopic);
-    }
+    if (!reconnect()) { delay(5000); }
     // Control if first timestamp is arrived
     if (state) {
       DateTime dt = DateTime(temp);
@@ -256,6 +252,7 @@ void mqttTask(void* params) {
 
         // Attempt to  MQTT every 5 seconds
         if (reconnect()) {
+          mqttClient.loop();
           lastReconnectAttemptMQTT = 0;
         }
       }
