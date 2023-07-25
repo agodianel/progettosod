@@ -90,7 +90,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if (strcmp(topic, mqttSyncTopic) == 0) {
     if (isFirst) {
       isFirst = false;
-      Serial.println("Message received!");
       char mqttMess[100];
       uint32_t timestamp;
       memcpy(mqttMess, payload, length);
@@ -99,9 +98,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
       timestamp = mess.toInt();
       DateTime dt = DateTime(timestamp);
       rtc.adjust(dt);
-      Serial.println("Sync done!");
     } else {
-      Serial.println("Message received!");
       char mqttMess[100];
       uint32_t timestamp;
       memcpy(mqttMess, payload, length);
@@ -112,7 +109,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
       xQueueSemaphoreTake(binarySemaphore, 0);
       rtc.adjust(dt);
       xSemaphoreGive(binarySemaphore);
-      Serial.println("Sync done!");
     }
   }
   
@@ -190,14 +186,10 @@ void sensorTask(void* params) {
     xQueueSemaphoreTake(binarySemaphore, portMAX_DELAY);
     
     pox.update();
-    //Serial.println("Sensor start!");
 
     // Read sensors data
-    
     sensorData.hr = pox.getHeartRate();
-    // sensorHistory.hr = pox.getHeartRate();
     sensorData.spo2 = pox.getSpO2();
-    //sensorHistory.spo2 = pox.getSpO2();
 
     if (!sgp30.IAQmeasure()) {
       Serial.println("Failed to measure IAQ!");
@@ -205,34 +197,14 @@ void sensorTask(void* params) {
 
     } else {
       sensorData.tvoc = sgp30.TVOC;
-      //sensorHistory.tvoc = sgp30.TVOC;
       sensorData.eco2 = sgp30.eCO2;
-      //sensorHistory.eco2 = sgp30.eCO2;
     }
 
     sensorData.currentTime = rtc.now().unixtime();
-    //sensorHistory.currentTime = rtc.now().unixtime();
 
-    
-    /*
-    Serial.println((int)(sensorData.hr));
-    Serial.println(sensorData.spo2);
-    Serial.println(sensorData.tvoc);
-    Serial.println(sensorData.eco2);
-    Serial.println(sensorData.currentTime);
-    */
     xSemaphoreGive(binarySemaphore);
     // Send sensors data through queue
     xQueueSend(sensorQueue, &sensorData, 0);
-    //xQueueSend(historyQueue, &sensorHistory, 0);
-
-    // Give semaphore
-    
-
-  
-    //Serial.println("Data sent!");
-
-    //Serial.println("Sensor stop!");
 
     // Block task for a fixed period
     vTaskDelayUntil(&xLastWakeTime, delaySensor);  // 100 ms
