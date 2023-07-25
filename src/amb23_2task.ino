@@ -51,6 +51,7 @@ boolean mqttConnected = false;
 TickType_t delaySensor = pdMS_TO_TICKS(100);
 TickType_t delayMqttC = pdMS_TO_TICKS(1000);
 TickType_t delayMqttDc = pdMS_TO_TICKS(1000);
+TickType_t emptyDelay = pdMS_TO_TICKS(100);
 
 // Queues
 QueueHandle_t sensorQueue;
@@ -241,7 +242,7 @@ void mqttTask(void* params) {
           snprintf(historyMess, sizeof(historyMess), "%d,%d,%d,%d,%d", sensorData.tvoc, sensorData.eco2, (int)sensorData.hr, sensorData.spo2, sensorData.currentTime);
           mqttClient.publish(mqttHistoryTopic, historyMess);
           mqttClient.loop();
-          vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
+          vTaskDelayUntil(&xLastWakeTime, emptyDelay);
         }
       }
       xSemaphoreGive(binarySemaphore);
