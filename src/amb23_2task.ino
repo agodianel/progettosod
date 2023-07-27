@@ -10,15 +10,15 @@
 #include <PubSubClient.h>
 
 // WiFi credentials
-char* ssid = "****";
-char* password = "****";
+char* ssid = "appz";
+char* password = "ago12345";
 
 // MQTT broker information
-char* mqttBroker = "****";
+char* mqttBroker = "192.168.228.103";
 int mqttPort = 1883;
-char* mqttClientId = "****";
-char* mqttUsername = "****";
-char* mqttPassword = "****";
+char* mqttClientId = "amebaClient";
+char* mqttUsername = "ameba";
+char* mqttPassword = "ameba";
 
 // Topic definition
 char* mqttSensorTopic = "sensor";
@@ -45,13 +45,13 @@ typedef struct {
 
 // Control variable
 boolean isFirst;
-boolean mqttConnected = false;
+boolean mqttConnected;
 
 // Predefined delay time
 TickType_t delaySensor = pdMS_TO_TICKS(100);
 TickType_t delayMqttC = pdMS_TO_TICKS(1000);
 TickType_t delayMqttDc = pdMS_TO_TICKS(1000);
-TickType_t emptyDelay = pdMS_TO_TICKS(100);
+TickType_t delayEmpty = pdMS_TO_TICKS(100);
 
 // Queues
 QueueHandle_t sensorQueue;
@@ -60,15 +60,14 @@ QueueHandle_t historyQueue;
 // Binary semaphore
 SemaphoreHandle_t binarySemaphore;
 
+// Handle MQTT 
 void handleMqttConnection() {
   if (!mqttClient.connected()) {
     if (mqttClient.connect(mqttClientId, mqttUsername, mqttPassword)) {
       mqttConnected = true;
-      
       mqttClient.subscribe(mqttSyncTopic);
       mqttClient.loop();
     } else {
-      
       mqttConnected = false;
     }
   }
@@ -82,13 +81,14 @@ boolean reconnectMQTT() {
   }
 
   return mqttClient.connected();
-
 }
 
 // Callback function: receive timestamp as message from topic through MQTT and sync time on PCF8523
 void callback(char* topic, byte* payload, unsigned int length) {
   
   if (strcmp(topic, mqttSyncTopic) == 0) {
+
+    // Run only first time sync
     if (isFirst) {
       isFirst = false;
       char mqttMess[100];
@@ -99,6 +99,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
       timestamp = mess.toInt();
       DateTime dt = DateTime(timestamp);
       rtc.adjust(dt);
+    
+    // Run other times
     } else {
       char mqttMess[100];
       uint32_t timestamp;
@@ -107,12 +109,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
       String mess = String(mqttMess);
       timestamp = mess.toInt();
       DateTime dt = DateTime(timestamp);
-      xQueueSemaphoreTake(binarySemaphore, 0);
-      rtc.adjust(dt);
-      xSemaphoreGive(binarySemaphore);
+      if (xQueueSemaphoreTake(binarySemaphore, portMAX_DELAY) == pdTRUE) {
+        rtc.adjust(dt);
+        xSemaphoreGive(binarySemaphore);
+      }
     }
   }
-  
 }
 
 // WiFi initialization procedure
@@ -125,7 +127,6 @@ void wifiInit() {
     delay(10000);
   }
   Serial.println("\n\nConnected to WiFi!\n");
-
 }
 
 // Sensors initialization procedure
@@ -147,11 +148,11 @@ void sensorInit() {
   } else {
     Serial.println("SGP3O initialized!");
   }
-
 }
 
 // Function that receive timestamp and set rtc sensor for the first time
 void syncFT() {
+
   // Initialize PCF8523
   if (!rtc.begin()) {
     Serial.println("Failed to initialize PCF8523!");
@@ -161,16 +162,15 @@ void syncFT() {
     rtc.start();
   }
 
+  // Loop until first timestamp is received and meanwhile check if WiFi and MQTT are connected
   while (isFirst) {
     if (WiFi.status() != WL_CONNECTED) {
       WiFi.begin(ssid, password);
       delay(5000); 
     }
-    
     if (!reconnectMQTT()) { delay(5000); }
     mqttClient.loop();
   }
-
 }
 
 // Sensor task: read data from sensors and send them through queue to MQTT task
@@ -184,40 +184,42 @@ void sensorTask(void* params) {
   while (1) {
     
     // Take semaphore
-    xQueueSemaphoreTake(binarySemaphore, portMAX_DELAY);
+    if (xQueueSemaphoreTake(binarySemaphore, portMAX_DELAY) == pdTRUE) {
     
-    pox.update();
+      // Read sensors data
+      pox.update();
+      sensorData.hr = pox.getHeartRate();
+      sensorData.spo2 = pox.getSpO2();
 
-    // Read sensors data
-    sensorData.hr = pox.getHeartRate();
-    sensorData.spo2 = pox.getSpO2();
+      if (!sgp30.IAQmeasure()) {
+        Serial.println("Failed to measure IAQ!");
+        while (1);
 
-    if (!sgp30.IAQmeasure()) {
-      Serial.println("Failed to measure IAQ!");
-      while (1);
+      } else {
+        sensorData.tvoc = sgp30.TVOC;
+        sensorData.eco2 = sgp30.eCO2;
+      }
 
-    } else {
-      sensorData.tvoc = sgp30.TVOC;
-      sensorData.eco2 = sgp30.eCO2;
+      sensorData.currentTime = rtc.now().unixtime();
+
+      // Give semaphore
+      xSemaphoreGive(binarySemaphore);
     }
-
-    sensorData.currentTime = rtc.now().unixtime();
-
-    xSemaphoreGive(binarySemaphore);
+    
     // Send sensors data through queue
     xQueueSend(sensorQueue, &sensorData, 0);
-
+    
     // Block task for a fixed period
-    vTaskDelayUntil(&xLastWakeTime, delaySensor);  // 100 ms
+    vTaskDelayUntil(&xLastWakeTime, delaySensor); 
   }
-
 }
 
 /* 
   MQTT task: 
     1. Check if WiFi & MQTT are connected
     2. Receive timestamp from MQTT topic and sync time on PCF8523
-    3. Receive sensors data through queue from Sensor task and send it as message to MQTT topic
+    3. Receive sensors data through queue from Sensor task and send it as message to both MQTT topic
+    4. If MQTT is disconnected save data into queue
 */
 
 void mqttTask(void* params) {
@@ -229,24 +231,35 @@ void mqttTask(void* params) {
 
   while (1) {
     
-    
     handleMqttConnection();
 
-    if (mqttConnected) {
-      xQueueSemaphoreTake(binarySemaphore, portMAX_DELAY);
+    // If MQTT is disconnected 
+    if (!mqttConnected) {
       
-      while (uxQueueMessagesWaiting(historyQueue) > 0) {
-        TickType_t xLastWakeTime = xTaskGetTickCount();
-        if (xQueueReceive(historyQueue, &sensorData, 0) == pdPASS) {
+      // Save data from sensor queue to history queue, if history queue is full overwrite the oldest value
+      if (xQueueReceive(sensorQueue, &sensorData, 0) == pdPASS) {
+        if (xQueueSend(historyQueue, &sensorData, 0) == errQUEUE_FULL) {
+          xQueueReceive(historyQueue, &sensorData, 0);
+        }
+      }
+      interval = delayMqttDc;
+
+    // If MQTT is connected 
+    } else {
+
+      // Empty history queue as fast as possible
+      if (xQueueSemaphoreTake(binarySemaphore, portMAX_DELAY) == pdTRUE) {
+        while (xQueueReceive(historyQueue, &sensorData, 0) == pdPASS) {
           char historyMess[100];
           snprintf(historyMess, sizeof(historyMess), "%d,%d,%d,%d,%d", sensorData.tvoc, sensorData.eco2, (int)sensorData.hr, sensorData.spo2, sensorData.currentTime);
           mqttClient.publish(mqttHistoryTopic, historyMess);
           mqttClient.loop();
-          vTaskDelayUntil(&xLastWakeTime, emptyDelay);
+          vTaskDelay(delayEmpty);
         }
+        xSemaphoreGive(binarySemaphore);
       }
-      xSemaphoreGive(binarySemaphore);
 
+      // Publish data on both topic
       if (xQueueReceive(sensorQueue, &sensorData, 0) == pdPASS) {
         char sensorMess[100];
         snprintf(sensorMess, sizeof(sensorMess), "%d,%d,%d,%d,%d", sensorData.tvoc, sensorData.eco2, (int)sensorData.hr, sensorData.spo2, sensorData.currentTime); 
@@ -256,20 +269,10 @@ void mqttTask(void* params) {
       }
       
       interval = delayMqttC;
-    } else {
-      
-      if (xQueueReceive(sensorQueue, &sensorData, 0) == pdPASS) {
-        xQueueSend(historyQueue, &sensorData, 0);
-      }
-      
-      
-      interval = delayMqttDc;
     }
     
     mqttClient.loop();
-    
-    
-    vTaskDelayUntil(&xLastWakeTime, interval);
+    vTaskDelayUntil(&xLastWakeTime, interval); 
   }
 }
 
@@ -293,7 +296,7 @@ void setup() {
 
   // Create queues
   sensorQueue = xQueueCreate(1, sizeof(SensorData));
-  historyQueue = xQueueCreate(100, sizeof(SensorData));
+  historyQueue = xQueueCreate(10, sizeof(SensorData));
 
   // Create binary semaphore
   binarySemaphore = xSemaphoreCreateBinary();
@@ -304,7 +307,6 @@ void setup() {
 
   // Give semaphore
   xSemaphoreGive(binarySemaphore);
-
 }
 
 // Unused
