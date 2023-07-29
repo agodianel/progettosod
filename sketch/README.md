@@ -10,7 +10,7 @@ Il file `Sketch.fzz` è un file di progetto creato utilizzando il software Fritz
 
 ### schemaeletr.png
 
-![Anteprima dello schema elettrico](schemaelettr.png)
+![Anteprima dello schema elettrico](schemaeletr.png)
 
 L'immagine `schemaeletr.png` è un'anteprima visiva dello schema elettrico del progetto contenuto nel file `Sketch.fzz`. Questa immagine può aiutare a fornire una panoramica veloce e semplice del circuito creato con il software Fritzing.
 
