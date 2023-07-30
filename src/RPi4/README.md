@@ -16,8 +16,6 @@ Questa cartella contiene una serie di script per la gestione di un Raspberry Pi 
    ```bash
    chmod +x nome_script.sh
 
-`sudo chmod +x nome_file.sh`
-
 Gli script start_mqtt.sh e stop_mqtt.sh contengono il comando ’sudo’, ciò vuol dire
 che viene richiesta la password che viene impostata quando viene flashato la SD,
 ma su Raspberry Pi OS per semplicità esiste una direttiva per fare in modo
