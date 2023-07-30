@@ -1,0 +1,1102 @@
+[
+    {
+        "id": "3901b51c1b021772",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "914dd81cb64a8568",
+        "type": "mqtt in",
+        "z": "3901b51c1b021772",
+        "name": "",
+        "topic": "sensor",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "43bcf724985c7d3b",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 310,
+        "y": 300,
+        "wires": [
+            [
+                "f1e8112113406b25",
+                "b96371ebae2b404b"
+            ]
+        ]
+    },
+    {
+        "id": "b96371ebae2b404b",
+        "type": "function",
+        "z": "3901b51c1b021772",
+        "name": "Split and Assign",
+        "func": "var receivedString = msg.payload;\nvar valuesArray = receivedString.split(\",\");\n\nvar tvoc = parseInt(valuesArray[0]);\nvar eco2 = parseInt(valuesArray[1]);\nvar hr = parseInt(valuesArray[2]);\nvar spo2 = parseInt(valuesArray[3]);\nvar timestamp = parseInt(valuesArray[4]);\n\nmsg.payload = {\n    tvoc: tvoc,\n    eco2: eco2,\n    hr: hr,\n    spo2: spo2,\n    timestamp: timestamp\n};\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 620,
+        "y": 300,
+        "wires": [
+            [
+                "60997b309deeeeb5",
+                "8a47c950b0b87004",
+                "693599b3a7cacef0",
+                "ca2e40439881001c"
+            ]
+        ]
+    },
+    {
+        "id": "bbaa94ac6efd973a",
+        "type": "ui_gauge",
+        "z": "3901b51c1b021772",
+        "name": "TVOC",
+        "group": "1b539836f5caa8a7",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "TVOC",
+        "label": "ppb",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "1000",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "500",
+        "seg2": "800",
+        "diff": false,
+        "className": "",
+        "x": 1510,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "b85386b9981e9e7d",
+        "type": "ui_gauge",
+        "z": "3901b51c1b021772",
+        "name": "eCO2",
+        "group": "1b539836f5caa8a7",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "eCO2",
+        "label": "ppm",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "10000",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "1000",
+        "seg2": "5000",
+        "diff": false,
+        "className": "",
+        "x": 1510,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "1c262fd26da9f9dc",
+        "type": "ui_gauge",
+        "z": "3901b51c1b021772",
+        "name": "HR",
+        "group": "1b539836f5caa8a7",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "HR",
+        "label": "bpm",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "200",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "80",
+        "seg2": "140",
+        "diff": false,
+        "className": "",
+        "x": 1510,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "8253359267af8259",
+        "type": "ui_gauge",
+        "z": "3901b51c1b021772",
+        "name": "Spo2",
+        "group": "1b539836f5caa8a7",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Spo2",
+        "label": "%",
+        "format": "{{value}}",
+        "min": "0",
+        "max": "100",
+        "colors": [
+            "#ff0000",
+            "#e6e600",
+            "#3acb5e"
+        ],
+        "seg1": "80",
+        "seg2": "90",
+        "diff": false,
+        "className": "",
+        "x": 1510,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "60997b309deeeeb5",
+        "type": "function",
+        "z": "3901b51c1b021772",
+        "name": "get tvoc",
+        "func": "// Extract the single value from the incoming message\nvar singleValue = msg.payload;\n\n// Set the single value as the new payload\nmsg.payload = msg.payload.tvoc;\n\n// Return the modified message object\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1280,
+        "y": 240,
+        "wires": [
+            [
+                "bbaa94ac6efd973a",
+                "b5ae95bec9f6c90d"
+            ]
+        ]
+    },
+    {
+        "id": "ca2e40439881001c",
+        "type": "function",
+        "z": "3901b51c1b021772",
+        "name": "get spo2",
+        "func": "// Extract the single value from the incoming message\nvar singleValue = msg.payload;\n\n// Set the single value as the new payload\nmsg.payload = msg.payload.spo2;\n\n// Return the modified message object\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1280,
+        "y": 440,
+        "wires": [
+            [
+                "8253359267af8259",
+                "4a85a55d0eba9875"
+            ]
+        ]
+    },
+    {
+        "id": "693599b3a7cacef0",
+        "type": "function",
+        "z": "3901b51c1b021772",
+        "name": "get hr",
+        "func": "// Extract the single value from the incoming message\nvar singleValue = msg.payload;\n\n// Set the single value as the new payload\nmsg.payload = msg.payload.hr;\n\n// Return the modified message object\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1270,
+        "y": 380,
+        "wires": [
+            [
+                "1c262fd26da9f9dc",
+                "e0f51993292c1957"
+            ]
+        ]
+    },
+    {
+        "id": "8a47c950b0b87004",
+        "type": "function",
+        "z": "3901b51c1b021772",
+        "name": "get eco2",
+        "func": "// Extract the single value from the incoming message\nvar singleValue = msg.payload;\n\n// Set the single value as the new payload\nmsg.payload = msg.payload.eco2;\n\n// Return the modified message object\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1280,
+        "y": 320,
+        "wires": [
+            [
+                "b85386b9981e9e7d",
+                "c610979214e1ba6b"
+            ]
+        ]
+    },
+    {
+        "id": "b5ae95bec9f6c90d",
+        "type": "ui_chart",
+        "z": "3901b51c1b021772",
+        "name": "",
+        "group": "911d2c461d49944a",
+        "order": 1,
+        "width": 5,
+        "height": 4,
+        "label": "TVOC",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "No Data Stream",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "10",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1510,
+        "y": 260,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4a85a55d0eba9875",
+        "type": "ui_chart",
+        "z": "3901b51c1b021772",
+        "name": "",
+        "group": "911d2c461d49944a",
+        "order": 3,
+        "width": 5,
+        "height": 4,
+        "label": "Spo2",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1510,
+        "y": 500,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e0f51993292c1957",
+        "type": "ui_chart",
+        "z": "3901b51c1b021772",
+        "name": "",
+        "group": "911d2c461d49944a",
+        "order": 4,
+        "width": 5,
+        "height": 5,
+        "label": "HR",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1510,
+        "y": 420,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c610979214e1ba6b",
+        "type": "ui_chart",
+        "z": "3901b51c1b021772",
+        "name": "",
+        "group": "911d2c461d49944a",
+        "order": 2,
+        "width": 5,
+        "height": 4,
+        "label": "eCO2",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1510,
+        "y": 340,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7b061c319aa65744",
+        "type": "influxdb in",
+        "z": "3901b51c1b021772",
+        "influxdb": "e3dbff75.a5a058",
+        "name": "",
+        "query": "SELECT * FROM data",
+        "rawOutput": false,
+        "precision": "",
+        "retentionPolicy": "",
+        "org": "my-org",
+        "x": 600,
+        "y": 600,
+        "wires": [
+            [
+                "06d4a6fa97837692"
+            ]
+        ]
+    },
+    {
+        "id": "8dd75cf4c5d1b70e",
+        "type": "inject",
+        "z": "3901b51c1b021772",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "1",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 350,
+        "y": 600,
+        "wires": [
+            [
+                "7b061c319aa65744"
+            ]
+        ]
+    },
+    {
+        "id": "7d92f5af1542f4b4",
+        "type": "ui_table",
+        "z": "3901b51c1b021772",
+        "group": "d2e04dd0.ee2c48",
+        "name": "",
+        "order": 8,
+        "width": 6,
+        "height": 6,
+        "columns": [],
+        "outputs": 1,
+        "cts": true,
+        "x": 1090,
+        "y": 600,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "68c2d71c385297b2",
+        "type": "exec",
+        "z": "3901b51c1b021772",
+        "command": "/home/pi/syncrtc.sh",
+        "addpay": "",
+        "append": "",
+        "useSpawn": "true",
+        "timer": "",
+        "winHide": false,
+        "oldrc": false,
+        "name": "",
+        "x": 510,
+        "y": 720,
+        "wires": [
+            [],
+            [],
+            []
+        ]
+    },
+    {
+        "id": "aad556ab1559c627",
+        "type": "ui_button",
+        "z": "3901b51c1b021772",
+        "name": "Sync RTC",
+        "group": "d2e04dd0.ee2c48",
+        "order": 2,
+        "width": "3",
+        "height": "1",
+        "passthru": false,
+        "label": "Sync Real RTC",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "send",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 330,
+        "y": 720,
+        "wires": [
+            [
+                "68c2d71c385297b2"
+            ]
+        ]
+    },
+    {
+        "id": "9d9445a58efe86c0",
+        "type": "ui_button",
+        "z": "3901b51c1b021772",
+        "name": "Sync Random RTC",
+        "group": "d2e04dd0.ee2c48",
+        "order": 1,
+        "width": "3",
+        "height": "1",
+        "passthru": false,
+        "label": "Random RTC",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "send",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 350,
+        "y": 780,
+        "wires": [
+            [
+                "b809c8868e19158a"
+            ]
+        ]
+    },
+    {
+        "id": "b809c8868e19158a",
+        "type": "function",
+        "z": "3901b51c1b021772",
+        "name": "function 2",
+        "func": "// Generate a random Unix time between 1/1/2022 and 12/31/2022\nvar startTime = new Date(2000, 0, 1).getTime() / 1000; // Unix time in seconds\nvar endTime = new Date(2022, 11, 31).getTime() / 1000; // Unix time in seconds\nvar randomTime = Math.floor(Math.random() * (endTime - startTime + 1) + startTime);\n\n// Create an MQTT message object\nmsg.payload = randomTime.toString();\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 540,
+        "y": 780,
+        "wires": [
+            [
+                "c168e181f941a973"
+            ]
+        ]
+    },
+    {
+        "id": "c168e181f941a973",
+        "type": "mqtt out",
+        "z": "3901b51c1b021772",
+        "name": "",
+        "topic": "timestamp",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "43bcf724985c7d3b",
+        "x": 790,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "06d4a6fa97837692",
+        "type": "function",
+        "z": "3901b51c1b021772",
+        "name": "function 3",
+        "func": "msg.payload = msg.payload.map(data => {\n    // Check if timestamp value is valid\n    if (!data.time || isNaN(data.timestamp)) {\n        return data;\n    }\n\n    // Convert Unix time to Date object\n    const timestamp = new Date(data.timestamp * 1000);\n\n    // Convert timestamp to GMT+2 timezone\n    const timezoneOffset = 0 * 60 * 60 * 1000; // 2 hours in milliseconds\n    const timestampWithOffset = new Date(timestamp.getTime() + timezoneOffset);\n\n    // Format date and time components\n    const year = timestampWithOffset.getFullYear();\n    const month = ('0' + (timestampWithOffset.getMonth() + 1)).slice(-2);\n    const day = ('0' + timestampWithOffset.getDate()).slice(-2);\n    const hours = ('0' + timestampWithOffset.getHours()).slice(-2);\n    const minutes = ('0' + timestampWithOffset.getMinutes()).slice(-2);\n    const seconds = ('0' + timestampWithOffset.getSeconds()).slice(-2);\n\n    // Create a new object with formatted timestamp\n    return {\n        timestamp: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,\n        eco2: data.eco2,\n        tvoc: data.tvoc,\n        hr: data.hr,\n        spo2: data.spo2\n    };\n});\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 600,
+        "wires": [
+            [
+                "7d92f5af1542f4b4"
+            ]
+        ]
+    },
+    {
+        "id": "f1e8112113406b25",
+        "type": "function",
+        "z": "3901b51c1b021772",
+        "name": "get ts",
+        "func": "var receivedString = msg.payload;\nvar valuesArray = receivedString.split(\",\");\n\nvar timestamp2 = parseInt(valuesArray[4]);\n\nmsg.payload = {\n    timestamp: timestamp2\n};\n\n// Extract the single value from the incoming message\nvar singleValue = msg.payload;\n\n// Set the single value as the new payload\nmsg.payload = msg.payload.timestamp2;\n\n\n\n\n    // Convert Unix time to Date object\n    const timestamp = new Date(timestamp2 * 1000);\n\n    // Convert timestamp to GMT+2 timezone\n    const timezoneOffset = 0 * 60 * 60 * 1000; // 2 hours in milliseconds\n    const timestampWithOffset = new Date(timestamp.getTime() + timezoneOffset);\n\n    // Format date and time components\n    const year = timestampWithOffset.getFullYear();\n    const month = ('0' + (timestampWithOffset.getMonth() + 1)).slice(-2);\n    const day = ('0' + timestampWithOffset.getDate()).slice(-2);\n    const hours = ('0' + timestampWithOffset.getHours()).slice(-2);\n    const minutes = ('0' + timestampWithOffset.getMinutes()).slice(-2);\n    const seconds = ('0' + timestampWithOffset.getSeconds()).slice(-2);\n\n    var timestamp3 = `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;\n    msg.payload = timestamp3\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1270,
+        "y": 200,
+        "wires": [
+            [
+                "9ea5aa1372c6dcf5"
+            ]
+        ]
+    },
+    {
+        "id": "9ea5aa1372c6dcf5",
+        "type": "ui_text",
+        "z": "3901b51c1b021772",
+        "group": "1b539836f5caa8a7",
+        "order": 1,
+        "width": 4,
+        "height": 2,
+        "name": "",
+        "label": "",
+        "format": "{{msg.payload}}",
+        "layout": "row-center",
+        "className": "",
+        "style": true,
+        "font": "Verdana,Verdana,Geneva,sans-serif",
+        "fontSize": "17",
+        "color": "#42c920",
+        "x": 1510,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "61c45f18c90d2805",
+        "type": "influxdb in",
+        "z": "3901b51c1b021772",
+        "influxdb": "e3dbff75.a5a058",
+        "name": "",
+        "query": "SELECT * FROM data",
+        "rawOutput": false,
+        "precision": "",
+        "retentionPolicy": "",
+        "org": "my-org",
+        "x": 1080,
+        "y": 680,
+        "wires": [
+            [
+                "a76b6c844e5cd732"
+            ]
+        ]
+    },
+    {
+        "id": "a244312658b3d4fe",
+        "type": "ui_table",
+        "z": "3901b51c1b021772",
+        "group": "d2e04dd0.ee2c48",
+        "name": "",
+        "order": 12,
+        "width": 6,
+        "height": "6",
+        "columns": [],
+        "outputs": 1,
+        "cts": true,
+        "x": 1570,
+        "y": 680,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a76b6c844e5cd732",
+        "type": "function",
+        "z": "3901b51c1b021772",
+        "name": "function 4",
+        "func": "msg.payload = msg.payload.map(data => {\n    // Check if timestamp value is valid\n    if (!data.time || isNaN(data.timestamp)) {\n        return data;\n    }\n\n    // Convert Unix time to Date object\n    const timestamp = new Date(data.timestamp * 1000);\n\n    // Convert timestamp to GMT+2 timezone\n    const timezoneOffset = 0 * 60 * 60 * 1000; // 2 hours in milliseconds\n    const timestampWithOffset = new Date(timestamp.getTime() + timezoneOffset);\n\n    // Format date and time components\n    const year = timestampWithOffset.getFullYear();\n    const month = ('0' + (timestampWithOffset.getMonth() + 1)).slice(-2);\n    const day = ('0' + timestampWithOffset.getDate()).slice(-2);\n    const hours = ('0' + timestampWithOffset.getHours()).slice(-2);\n    const minutes = ('0' + timestampWithOffset.getMinutes()).slice(-2);\n    const seconds = ('0' + timestampWithOffset.getSeconds()).slice(-2);\n\n    // Create a new object with formatted timestamp\n    return {\n        timestamp: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,\n        eco2: data.eco2,\n        tvoc: data.tvoc,\n        hr: data.hr,\n        spo2: data.spo2\n    };\n});\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1400,
+        "y": 680,
+        "wires": [
+            [
+                "a244312658b3d4fe"
+            ]
+        ]
+    },
+    {
+        "id": "b8e6b6a793affa13",
+        "type": "ui_button",
+        "z": "3901b51c1b021772",
+        "name": "",
+        "group": "d2e04dd0.ee2c48",
+        "order": 9,
+        "width": "3",
+        "height": "1",
+        "passthru": false,
+        "label": "Show Table",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "file_download",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 750,
+        "y": 680,
+        "wires": [
+            [
+                "61c45f18c90d2805"
+            ]
+        ]
+    },
+    {
+        "id": "clearButton",
+        "type": "ui_button",
+        "z": "3901b51c1b021772",
+        "name": "Clear Table",
+        "group": "d2e04dd0.ee2c48",
+        "order": 10,
+        "width": "3",
+        "height": "1",
+        "passthru": false,
+        "label": "Clear Table",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "delete_sweep",
+        "payload": "clear",
+        "payloadType": "str",
+        "topic": "",
+        "topicType": "str",
+        "x": 1010,
+        "y": 880,
+        "wires": [
+            [
+                "clearFunctionNode"
+            ]
+        ]
+    },
+    {
+        "id": "clearFunctionNode",
+        "type": "function",
+        "z": "3901b51c1b021772",
+        "name": "Clear Table Function",
+        "func": "if (msg.payload === 'clear') {\n    // Clear the table or update the payload to an empty array\n    // Depending on the table implementation\n    msg.payload = [];\n}\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1230,
+        "y": 880,
+        "wires": [
+            [
+                "a244312658b3d4fe"
+            ]
+        ]
+    },
+    {
+        "id": "c0df4292b4f83555",
+        "type": "exec",
+        "z": "3901b51c1b021772",
+        "command": "/home/pi/start_mqtt.sh",
+        "addpay": "",
+        "append": "",
+        "useSpawn": "true",
+        "timer": "",
+        "winHide": false,
+        "oldrc": false,
+        "name": "",
+        "x": 520,
+        "y": 860,
+        "wires": [
+            [],
+            [],
+            []
+        ]
+    },
+    {
+        "id": "2a3b72787b75871a",
+        "type": "ui_button",
+        "z": "3901b51c1b021772",
+        "name": "Start MQTT",
+        "group": "d2e04dd0.ee2c48",
+        "order": 3,
+        "width": 3,
+        "height": 1,
+        "passthru": false,
+        "label": "Start MQTT",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "send",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 330,
+        "y": 860,
+        "wires": [
+            [
+                "c0df4292b4f83555"
+            ]
+        ]
+    },
+    {
+        "id": "9aedc4186f418f96",
+        "type": "exec",
+        "z": "3901b51c1b021772",
+        "command": "/home/pi/stop_mqtt.sh",
+        "addpay": "",
+        "append": "",
+        "useSpawn": "true",
+        "timer": "",
+        "winHide": false,
+        "oldrc": false,
+        "name": "",
+        "x": 520,
+        "y": 940,
+        "wires": [
+            [],
+            [],
+            []
+        ]
+    },
+    {
+        "id": "0c6ae9e9422c17ec",
+        "type": "ui_button",
+        "z": "3901b51c1b021772",
+        "name": "Stop MQTT",
+        "group": "d2e04dd0.ee2c48",
+        "order": 4,
+        "width": 3,
+        "height": 1,
+        "passthru": false,
+        "label": "Stop MQTT",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "send",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 330,
+        "y": 940,
+        "wires": [
+            [
+                "9aedc4186f418f96"
+            ]
+        ]
+    },
+    {
+        "id": "c30e7cfa464d44b2",
+        "type": "exec",
+        "z": "3901b51c1b021772",
+        "command": "/home/pi/stop_db.sh",
+        "addpay": "",
+        "append": "",
+        "useSpawn": "true",
+        "timer": "",
+        "winHide": false,
+        "oldrc": false,
+        "name": "",
+        "x": 515,
+        "y": 1142,
+        "wires": [
+            [],
+            [],
+            []
+        ]
+    },
+    {
+        "id": "1b89db903efd9177",
+        "type": "ui_button",
+        "z": "3901b51c1b021772",
+        "name": "Stop Influx",
+        "group": "d2e04dd0.ee2c48",
+        "order": 6,
+        "width": 3,
+        "height": 1,
+        "passthru": false,
+        "label": "Stop Influx",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "send",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 330,
+        "y": 1140,
+        "wires": [
+            [
+                "c30e7cfa464d44b2"
+            ]
+        ]
+    },
+    {
+        "id": "253185908a28d1b2",
+        "type": "exec",
+        "z": "3901b51c1b021772",
+        "command": "/home/pi/write_db.sh",
+        "addpay": "",
+        "append": "",
+        "useSpawn": "true",
+        "timer": "",
+        "winHide": false,
+        "oldrc": false,
+        "name": "",
+        "x": 520,
+        "y": 1060,
+        "wires": [
+            [],
+            [],
+            []
+        ]
+    },
+    {
+        "id": "14987e0f5f767bb9",
+        "type": "ui_button",
+        "z": "3901b51c1b021772",
+        "name": "Start Influx",
+        "group": "d2e04dd0.ee2c48",
+        "order": 5,
+        "width": 3,
+        "height": 1,
+        "passthru": false,
+        "label": "Start Influx",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "send",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 330,
+        "y": 1060,
+        "wires": [
+            [
+                "253185908a28d1b2"
+            ]
+        ]
+    },
+    {
+        "id": "c55e54719850c73e",
+        "type": "ui_spacer",
+        "z": "3901b51c1b021772",
+        "name": "spacer",
+        "group": "d2e04dd0.ee2c48",
+        "order": 11,
+        "width": 6,
+        "height": 1
+    },
+    {
+        "id": "ca0e6b1753c89492",
+        "type": "ui_spacer",
+        "z": "3901b51c1b021772",
+        "name": "spacer",
+        "group": "1b539836f5caa8a7",
+        "order": 3,
+        "width": 4,
+        "height": 1
+    },
+    {
+        "id": "75df0b8dbd23aa21",
+        "type": "ui_spacer",
+        "z": "3901b51c1b021772",
+        "name": "spacer",
+        "group": "1b539836f5caa8a7",
+        "order": 5,
+        "width": 4,
+        "height": 1
+    },
+    {
+        "id": "6a590476320fb22a",
+        "type": "ui_spacer",
+        "z": "3901b51c1b021772",
+        "name": "spacer",
+        "group": "1b539836f5caa8a7",
+        "order": 7,
+        "width": 4,
+        "height": 1
+    },
+    {
+        "id": "43bcf724985c7d3b",
+        "type": "mqtt-broker",
+        "name": "InfluxDB",
+        "broker": "192.168.228.103",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "1b539836f5caa8a7",
+        "type": "ui_group",
+        "name": "Gauge",
+        "tab": "ff5af2efe9cfa1a9",
+        "order": 3,
+        "disp": false,
+        "width": "4",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "911d2c461d49944a",
+        "type": "ui_group",
+        "name": "Chart",
+        "tab": "ff5af2efe9cfa1a9",
+        "order": 2,
+        "disp": false,
+        "width": "5",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "e3dbff75.a5a058",
+        "type": "influxdb",
+        "hostname": "192.168.228.103",
+        "port": "8086",
+        "protocol": "http",
+        "database": "ameba",
+        "name": "Ameba InfluxDB ",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "1.x",
+        "url": "",
+        "rejectUnauthorized": false
+    },
+    {
+        "id": "d2e04dd0.ee2c48",
+        "type": "ui_group",
+        "name": "Button",
+        "tab": "ff5af2efe9cfa1a9",
+        "order": 1,
+        "disp": false,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "ff5af2efe9cfa1a9",
+        "type": "ui_tab",
+        "name": "Vital Signs and Air Quality",
+        "icon": "all_inclusive",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    }
+]
