@@ -1,4 +1,4 @@
-Questo cartella contiene il codice implementato su Ameba AMB23 che raccoglie dati da diversi sensori (SGP30, MAX30102, RTC) e li invia tramite MQTT a un broker remoto. Il progetto utilizza il sistema operativo FreeRTOS per gestire i compiti in modo asincrono e garantire un funzionamento efficiente.
+Questa cartella contiene il codice implementato su Ameba AMB23 che raccoglie dati da diversi sensori (SGP30, MAX30102, RTC) e li invia tramite MQTT a un broker remoto. Il progetto utilizza il sistema operativo FreeRTOS per gestire i compiti in modo asincrono e garantire un funzionamento efficiente.
 
 # Funzionalità principali
 
