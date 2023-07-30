@@ -10,15 +10,15 @@
 #include <PubSubClient.h>
 
 // WiFi credentials
-char* ssid = "appz";
-char* password = "ago12345";
+char* ssid = "****";
+char* password = "****";
 
 // MQTT broker information
-char* mqttBroker = "192.168.228.103";
+char* mqttBroker = "****";
 int mqttPort = 1883;
-char* mqttClientId = "amebaClient";
-char* mqttUsername = "ameba";
-char* mqttPassword = "ameba";
+char* mqttClientId = "****";
+char* mqttUsername = "****";
+char* mqttPassword = "****";
 
 // Topic definition
 char* mqttSensorTopic = "sensor";
@@ -45,13 +45,12 @@ typedef struct {
 
 // Control variable
 boolean isFirst;
-boolean mqttConnected;
 
 // Predefined delay time
 TickType_t delaySensor = pdMS_TO_TICKS(100);
 TickType_t delayMqttC = pdMS_TO_TICKS(1000);
 TickType_t delayMqttDc = pdMS_TO_TICKS(1000);
-TickType_t delayEmpty = pdMS_TO_TICKS(100);
+unsigned long delayEmpty = 50;
 
 // Queues
 QueueHandle_t sensorQueue;
@@ -59,19 +58,6 @@ QueueHandle_t historyQueue;
 
 // Binary semaphore
 SemaphoreHandle_t binarySemaphore;
-
-// Handle MQTT 
-void handleMqttConnection() {
-  if (!mqttClient.connected()) {
-    if (mqttClient.connect(mqttClientId, mqttUsername, mqttPassword)) {
-      mqttConnected = true;
-      mqttClient.subscribe(mqttSyncTopic);
-      mqttClient.loop();
-    } else {
-      mqttConnected = false;
-    }
-  }
-}
 
 // Reconnect function for MQTT
 boolean reconnectMQTT() {
@@ -87,28 +73,22 @@ boolean reconnectMQTT() {
 void callback(char* topic, byte* payload, unsigned int length) {
   
   if (strcmp(topic, mqttSyncTopic) == 0) {
-
+    
+    char mqttMess[100];
+    uint32_t timestamp;
+    memcpy(mqttMess, payload, length);
+    mqttMess[length] = '\0';
+    String mess = String(mqttMess);
+    timestamp = mess.toInt();
+    DateTime dt = DateTime(timestamp);
+    
     // Run only first time sync
     if (isFirst) {
       isFirst = false;
-      char mqttMess[100];
-      uint32_t timestamp;
-      memcpy(mqttMess, payload, length);
-      mqttMess[length] = '\0';
-      String mess = String(mqttMess);
-      timestamp = mess.toInt();
-      DateTime dt = DateTime(timestamp);
       rtc.adjust(dt);
     
     // Run other times
     } else {
-      char mqttMess[100];
-      uint32_t timestamp;
-      memcpy(mqttMess, payload, length);
-      mqttMess[length] = '\0';
-      String mess = String(mqttMess);
-      timestamp = mess.toInt();
-      DateTime dt = DateTime(timestamp);
       if (xQueueSemaphoreTake(binarySemaphore, portMAX_DELAY) == pdTRUE) {
         rtc.adjust(dt);
         xSemaphoreGive(binarySemaphore);
@@ -207,7 +187,7 @@ void sensorTask(void* params) {
     }
     
     // Send sensors data through queue
-    xQueueSend(sensorQueue, &sensorData, 0);
+    xQueueOverwrite(sensorQueue, &sensorData);
     
     // Block task for a fixed period
     vTaskDelayUntil(&xLastWakeTime, delaySensor); 
@@ -226,37 +206,41 @@ void mqttTask(void* params) {
 
   (void) params;
   SensorData sensorData;
+  unsigned long currentMills;
   TickType_t interval;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   while (1) {
-    
-    handleMqttConnection();
 
     // If MQTT is disconnected 
-    if (!mqttConnected) {
+    if (!mqttClient.connected()) {
       
+      reconnectMQTT();
+
       // Save data from sensor queue to history queue, if history queue is full overwrite the oldest value
       if (xQueueReceive(sensorQueue, &sensorData, 0) == pdPASS) {
         if (xQueueSend(historyQueue, &sensorData, 0) == errQUEUE_FULL) {
           xQueueReceive(historyQueue, &sensorData, 0);
         }
       }
+
       interval = delayMqttDc;
 
     // If MQTT is connected 
     } else {
-
-      // Empty history queue as fast as possible
-      if (xQueueSemaphoreTake(binarySemaphore, portMAX_DELAY) == pdTRUE) {
-        while (xQueueReceive(historyQueue, &sensorData, 0) == pdPASS) {
-          char historyMess[100];
-          snprintf(historyMess, sizeof(historyMess), "%d,%d,%d,%d,%d", sensorData.tvoc, sensorData.eco2, (int)sensorData.hr, sensorData.spo2, sensorData.currentTime);
-          mqttClient.publish(mqttHistoryTopic, historyMess);
-          mqttClient.loop();
-          vTaskDelay(delayEmpty);
+      
+      unsigned long previousMills = 0;
+      // Empty history queue as fast as possible 
+      while (uxQueueMessagesWaiting(historyQueue) > 0) {
+        currentMills = millis();
+        if (currentMills - previousMills >= delayEmpty) {
+          previousMills = currentMills;
+          if (xQueueReceive(historyQueue, &sensorData, 0) == pdPASS) {
+            char historyMess[100];
+            snprintf(historyMess, sizeof(historyMess), "%d,%d,%d,%d,%d", sensorData.tvoc, sensorData.eco2, (int)sensorData.hr, sensorData.spo2, sensorData.currentTime);
+            mqttClient.publish(mqttHistoryTopic, historyMess);
+          }
         }
-        xSemaphoreGive(binarySemaphore);
       }
 
       // Publish data on both topic
@@ -265,13 +249,12 @@ void mqttTask(void* params) {
         snprintf(sensorMess, sizeof(sensorMess), "%d,%d,%d,%d,%d", sensorData.tvoc, sensorData.eco2, (int)sensorData.hr, sensorData.spo2, sensorData.currentTime); 
         mqttClient.publish(mqttSensorTopic, sensorMess);
         mqttClient.publish(mqttHistoryTopic, sensorMess);
-        mqttClient.loop();
       }
       
       interval = delayMqttC;
+      
     }
     
-    mqttClient.loop();
     vTaskDelayUntil(&xLastWakeTime, interval); 
   }
 }
@@ -280,7 +263,6 @@ void setup() {
 
   Serial.begin(115200);
   isFirst = true;
-  mqttConnected = true;
 
   mqttClient.setServer(mqttBroker, mqttPort);
   mqttClient.setCallback(callback);
@@ -309,5 +291,7 @@ void setup() {
   xSemaphoreGive(binarySemaphore);
 }
 
-// Unused
-void loop() {}
+// Idle task used for call mqtt loop
+void loop() {
+  mqttClient.loop();
+}
