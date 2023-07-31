@@ -218,9 +218,14 @@ void mqttTask(void* params) {
       reconnectMQTT();
 
       // Save data from sensor queue to history queue, if history queue is full overwrite the oldest value
-      if (xQueueReceive(sensorQueue, &sensorData, 0) == pdPASS) {
-        if (xQueueSend(historyQueue, &sensorData, 0) == errQUEUE_FULL) {
-          xQueueReceive(historyQueue, &sensorData, 0);
+      if (uxQueueSpacesAvailable(historyQueue) > 0) {
+        if (xQueueReceive(sensorQueue, &sensorData, 0) == pdPASS) {
+          xQueueSend(historyQueue, &sensorData, 0);
+        }
+      } else {
+        xQueueReceive(historyQueue, &sensorData, 0);
+        if (xQueueReceive(sensorQueue, &sensorData, 0) == pdPASS) {
+          xQueueSend(historyQueue, &sensorData, 0);
         }
       }
 
